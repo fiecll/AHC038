@@ -63,6 +63,37 @@ void move(Point* point, int direction){
     // 根がグリッド外に出る場合は何もしない
 }
 
+pair<int,int> rotate_point(Point* point ,int direction){
+    assert (direction == 0 || direction == 1 || direction == 2);
+    if(direction == 2) return make_pair(point->position.first,point->position.second);
+    // 親頂点の位置を取得
+    Point* parent = point->parent;
+
+    // 親が存在しない場合は回転を行わない
+    if (parent == nullptr) {
+        return make_pair(point->position.first,point->position.second);
+    }
+    int dx = point->position.first - parent->position.first;
+    int dy = point->position.second - parent->position.second;
+    int new_x, new_y;
+    if (direction == 0) { // 時計回り
+        new_x= parent->position.first  + dy;   // x' = y
+        new_y = parent->position.second - dx; // y' = -x
+        if (new_x < 0 || new_x >= n || new_y < 0 || new_y >= n) {
+                return make_pair(point->position.first,point->position.second);
+            }
+    }
+    else if (direction == 1) { // 反時計回り
+        new_x = parent->position.first - dy;   // x' = -y
+        new_y = parent->position.second + dx; // y' = x
+        if (new_x < 0 || new_x >= n || new_y < 0 || new_y >= n) {
+                return make_pair(point->position.first,point->position.second);
+            }
+    }
+    return make_pair(new_x,new_y);
+
+}
+
 // 回転させる関数
 void rotate(Point* point, int direction) {
     // direction: 0 = 時計回り、1 = 反時計回り, 2 = 回転なし
@@ -91,18 +122,67 @@ void rotate(Point* point, int direction) {
         int dx = child->position.first  - parent->position.first;
         int dy = child->position.second - parent->position.second;
     if (direction == 0) { // 時計回り
-        point->position.first = parent->position.first  + dy;   // x' = y
-        point->position.second = parent->position.second - dx; // y' = -x
+        child->position.first = parent->position.first  + dy;   // x' = y
+        child->position.second = parent->position.second - dx; // y' = -x
     }
     else if (direction == 1) { // 反時計回り
-        point->position.first = parent->position.first  - dy;   // x' = -y
-        point->position.second = parent->position.second + dx; // y' = x
+        child->position.first = parent->position.first  - dy;   // x' = -y
+        child->position.second = parent->position.second + dx; // y' = x
     }
     }
 }
+//たこ焼きのより存在する方向を考える
+int find_nearest_takoyaki(Point* point){
+    int x = 0;
+    int y = 0;
+    int sum = 0;
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+            if(takoyaki_position[i][j] == true &&  target[i][j] == false ){
+                x += i;
+                y += j;
+                sum++;
+            }
+        }
+    }
+    if (sum == 0)return 0;
+    x /= sum;
+    y /= sum;
+    int now_x = point->position.first;
+    int now_y = point->position.second;
+    int dif_x = now_x - x;//たこ焼きの位置の平均値との差異を取得
+    int dif_y = now_y - y;
+    if(abs(dif_x) > abs(dif_y)){
+        if(now_x < x) return 1;
+        else return 3;
+    }
+    else {
+        if(now_y < y) return 0;
+        else return 2;
+    }
+}
+
+// 最も近い目的地を探す
+int find_nearest_target(Point* point){
+    int now_x = point->position.first;
+    int now_y = point->position.second;
+    for(int i=1;i<n;i++){
+        for(int j = 0;j<4;j++){
+            int next_x = now_x + DX[j] * i;
+            int next_y = now_y + DY[j] * i;
+            if (next_x < 0 || next_x >= n || next_y < 0 || next_y >= n) {
+                continue;
+            }
+            if(target[next_x][next_y] == true && takoyaki_position[next_x][next_y] == false){
+                return j;
+            }
+        }
+    }
+    return 0;
+}
+
 
 void solve(){
-    srand(time(0));
     int m,v;
     cin >> n >> m >> v; // n :グリッドの大きさ　m:たこ焼きの個数　v: ロボットアームの頂点数
     takoyaki_position.assign(n, vector<bool>(n, false));               
@@ -119,15 +199,8 @@ void solve(){
         }
     }
     target.assign(n,vector<bool>(n,false));
-    // for(int i=0;i<n;i++){
-    //     for(int j = 0;j<n;j++){
-    //         if(takoyaki_position[i][j])cout << 1;
-    //         else cout << 0;
 
-    //     }
-    //     cout << endl;
-    // }
-    // 目的地の情報を初期化　true:まだ置かれていない
+    // 目的地の情報を初期化　true:目標点
     for(int i=0;i<n;i++){
         string t;
         cin >> t;
@@ -137,12 +210,6 @@ void solve(){
             }
         }
     }  
-    //    for(int i=0;i<n;i++){
-    //     for(int j = 0;j<n;j++){
-    //         cout << target[i][j] ;
-    //     }
-    //     cout << endl;
-    // }
 
     // 未処理の目標位置があるかどうかを判定する関数
     auto hasRemainingTargets = [&]()-> bool {
@@ -197,8 +264,15 @@ void solve(){
             }
             string s;
 
+            int dir;// 縦横移動の方向
+            if(arm[1]->have ==false){
             // 移動操作の指定
-            int dir = rand() % 4;
+            dir = find_nearest_takoyaki(arm[0]);
+            }
+            else {
+                dir = find_nearest_target(arm[1]); 
+            }
+            assert(dir>= 0 && dir <= 3);
             int new_x = arm[0]->position.first + DX[dir];
             int new_y = arm[0]->position.second + DY[dir];
             if(new_x >= 0 && new_x < n && new_y >= 0 && new_y < n){
@@ -207,18 +281,31 @@ void solve(){
             } else {
                 s += '.';
             }
+     
 
             // cout << arm[0]->position.first << ' ' << arm[0]->position.second ;
             // cout << arm[1]->position.first << ' ' << arm[1]->position.second << endl;
             // 回転操作の指定
+            int rot = 3; //回転方向
             for(int i = 1; i < v; i++){
-                if (arm[i]->children.empty()) {
-                    int rot = rand() % 3;
+                int now_x = arm[i]->position.first;
+                int now_y = arm[i]->position.first;
+                for(int j = 0;j<1;j++){
+                    int next_x = rotate_point(arm[i],j).first;
+                    int next_y = rotate_point(arm[i],j).second;
+                    if( arm[i]->have == true && target[next_x][next_y] == true && takoyaki_position[next_x][next_y] == false){
+                        rot = j;
+                        break;
+                    }
+                    else if(arm[i]->have == false && target[next_x][next_y] == false && takoyaki_position[next_x][next_y] == true){
+                        rot = j;
+                        break;
+                    }
+                 }
+                    if (rot == 3 )rot = rand() % 3;
                     rotate(arm[i], rot);
                     s += direction[rot];
-                } else {
-                    s += '.'; // 操作なし
-                }
+
             }
 
             // たこ焼き操作の指定
@@ -235,9 +322,8 @@ void solve(){
                             s += 'P';
                         }
                         else if(arm[i]->have == true && target[x][y] == true && takoyaki_position[x][y] == false){
-                            arm[i]->have = false;
-                            target[x][y] = false; // たこ焼きを置く
-                            takoyaki_position[x][y] = 1;
+                            arm[i]->have = false;// たこ焼きを置く
+                            takoyaki_position[x][y] = true;
                             s += 'P';
                         }
                         else {
