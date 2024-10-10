@@ -103,40 +103,66 @@ void rotate(Point* point, int direction) {
 
 //たこ焼きのより存在する方向を考える
 int find_nearest_takoyaki(Point* point){
-    int x = 0;
-    int y = 0;
-    int sum = 0;
+    // int x = 0;
+    // int y = 0;
+    // int sum = 0;
+    // for(int i=0;i<n;i++){
+    //     for(int j=0;j<n;j++){
+    //         if(takoyaki_position[i][j] == true &&  target[i][j] == false ){
+    //             x += i;
+    //             y += j;
+    //             sum++;
+    //         }
+    //     }
+    // }
+    // if (sum == 0)return 0;
+    // x /= sum;
+    // y /= sum;
+    // int now_x = point->position.first;
+    // int now_y = point->position.second;
+    // int dif_x = now_x - x;//たこ焼きの位置の平均値との差異を取得
+    // int dif_y = now_y - y;
+    // if(abs(dif_x) > abs(dif_y)){
+    //     if(now_x < x) return 1;
+    //     else return 3;
+    // }
+    // else {
+    //     if(now_y < y) return 0;
+    //     else return 2;
+    // }
+    int now_x = point->position.first;
+    int now_y = point->position.second;
+    int ans = -1;
+    int dist = 2*n+1;
     for(int i=0;i<n;i++){
         for(int j=0;j<n;j++){
-            if(takoyaki_position[i][j] == true &&  target[i][j] == false ){
-                x += i;
-                y += j;
-                sum++;
+            if(takoyaki_position[i][j] == true && target[i][j] == false){
+                int dif_x = now_x - i;
+                int dif_y = now_y - j;
+                int kyori = abs(dif_x) + abs(dif_y);
+                if(kyori < dist){
+                    dist = kyori; // distを更新
+                    if(abs(dif_x) > abs(dif_y)){
+                        if(now_x < i) ans = 1; // 下に移動
+                        else ans = 3;          // 上に移動
+                    }
+                    else {
+                        if(now_y < j) ans = 0; // 右に移動
+                        else ans = 2;          // 左に移動
+                    }
+                }
             }
         }
     }
-    if (sum == 0)return 0;
-    x /= sum;
-    y /= sum;
-    int now_x = point->position.first;
-    int now_y = point->position.second;
-    int dif_x = now_x - x;//たこ焼きの位置の平均値との差異を取得
-    int dif_y = now_y - y;
-    if(abs(dif_x) > abs(dif_y)){
-        if(now_x < x) return 1;
-        else return 3;
-    }
-    else {
-        if(now_y < y) return 0;
-        else return 2;
-    }
+    if(ans == -1) ans = 0; // たこ焼きが見つからない場合のデフォルト方向
+    return ans;
 }
 
 // 最も近い目的地を探す
 int find_nearest_target(Point* point){
     int now_x = point->position.first;
     int now_y = point->position.second;
-    int ans = 0;
+    int ans  = rand()%4;
     int dist = 2*n+1;
     for(int i=0;i<n;i++){
         for(int j=0;j<n;j++){
@@ -145,6 +171,7 @@ int find_nearest_target(Point* point){
                 int dif_y = now_y - j;
                 int kyori = abs (dif_x) + abs (dif_y);
                 if( kyori < dist){
+                    dist = kyori;
                     if(abs(dif_x) > abs(dif_y)){
                         if(now_x < i) ans =  1;
                         else ans =  3;
@@ -214,13 +241,24 @@ void solve(){
         }
         return false;
     };
+    // 盤上にたこ焼きが残っている
+    auto restTakoyaki = [&]() -> bool {
+        for(int i=0;i<n;i++){
+            for(int j=0;j<n;j++){
+                if(takoyaki_position[i][j] == true){
+                    return true;
+                }
+            }
+        }
+        return false;
+    };
 
+    //v = 2;
     cout << v << endl;
     // アームの初期化
     Point* root = new Point(0, make_pair(0,0));
     arm.push_back(root);
     // 0を親として、頂点idの長さのアームを設定
-    //v = 2;
     for(int i=1;i<v;i++){
         cout << 0 << ' ' << i << endl;
         Point* newpoint = new Point(i, arm[0], make_pair(arm[0]->position.first , arm[i-1]->position.second+1));
@@ -234,6 +272,14 @@ void solve(){
     vector<string>realans;
     int lastscore = 1e9;
     const int MAX_ITERATIONS = 10000;
+    int rest = m;
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+            if(takoyaki_position[i][j] && target[i][j]){
+                rest--;
+            }
+        }
+    }
     while(true){
         int score = 0;
         vector<string>ans;//暫定答え
@@ -244,27 +290,40 @@ void solve(){
         //         a->have = false;
         //     }
         // }
-        int turn = 0;
-
-        while(m>0){
-            // if(score == 50)break;
-
-            if(score >= MAX_ITERATIONS){
+        while(rest>0){
+            if (!hasRemainingTargets() && !restTakoyaki())break;
+            //cout <<score  << ' ' <<  rest << endl;
+            if(score >= 10000){
                 break;
             }
-            string s;
 
+            string s;
+            //cout << rest <<endl;
             int dir;// 縦横移動の方向
-            if(arm[1]->have ==false){
+            if(arm[1]->have ==false && restTakoyaki()){
             // 移動操作の指定
             dir = find_nearest_takoyaki(arm[0]);
             }
             else if(hasRemainingTargets() && arm[1]->have ==true){
+            // たこ焼きを運んでいるとき
                 dir = find_nearest_target(arm[1]); 
             }
+            else {
+            // ほかの頂点にたこ焼きが残っているとき  
+                for(int i=2;i<v;i++){
+                //if(arm[i]->have == true){
+                    dir = find_nearest_target(arm[0]);
+                    break;
+
+                //}
+                }
+            }
+
             assert(dir>= 0 && dir <= 3);
-            int new_x = arm[0]->position.first + DX[dir];
+            int new_x = arm[0]->position.first  + DX[dir];
             int new_y = arm[0]->position.second + DY[dir];
+            // s += to_string(rest);
+            // s += to_string(score);
             if(new_x >= 0 && new_x < n && new_y >= 0 && new_y < n){
                 move(arm[0], dir);
                 s += DIR[dir];
@@ -297,9 +356,11 @@ void solve(){
                             s += 'P';
                         }
                         else if(arm[i]->have == true && target[x][y] == true && takoyaki_position[x][y] == false){
+                            // たこ焼きを置く
                             arm[i]->have = false;
-                            takoyaki_position[x][y] = 1;
-                            m--;
+                            takoyaki_position[x][y] = true;
+                            rest--;
+                            //cout << rest << endl;
                             s += 'P';
                         }
                         else {
