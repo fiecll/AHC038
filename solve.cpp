@@ -136,19 +136,28 @@ int find_nearest_takoyaki(Point* point){
 int find_nearest_target(Point* point){
     int now_x = point->position.first;
     int now_y = point->position.second;
-    for(int i=1;i<n;i++){
-        for(int j = 0;j<4;j++){
-            int next_x = now_x + DX[j] * i;
-            int next_y = now_y + DY[j] * i;
-            if (next_x < 0 || next_x >= n || next_y < 0 || next_y >= n) {
-                continue;
-            }
-            if(target[next_x][next_y] == true && takoyaki_position[next_x][next_y] == false){
-                return j;
+    int ans = 0;
+    int dist = 2*n+1;
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+            if(target[i][j] == true && takoyaki_position[i][j] == false){
+                int dif_x = now_x - i;
+                int dif_y = now_y - j;
+                int kyori = abs (dif_x) + abs (dif_y);
+                if( kyori < dist){
+                    if(abs(dif_x) > abs(dif_y)){
+                        if(now_x < i) ans =  1;
+                        else ans =  3;
+                    }
+                else {
+                    if(now_y < j) ans =  0;
+                    else ans =  2;
+                    }          
+                }
             }
         }
     }
-    return 0;
+    return ans;
 }
 
 void solve(){
@@ -237,11 +246,9 @@ void solve(){
         // }
         int turn = 0;
 
-        while(hasRemainingTargets()){
+        while(m>0){
             // if(score == 50)break;
-            // cout << "turn:" << score << ' ';
-            // cout << arm[0]->position.first <<' ' <<  arm[0]->position.second;
-            // cout << arm[1]->position.first <<' ' <<  arm[1]->position.second<<endl;
+
             if(score >= MAX_ITERATIONS){
                 break;
             }
@@ -252,7 +259,7 @@ void solve(){
             // 移動操作の指定
             dir = find_nearest_takoyaki(arm[0]);
             }
-            else {
+            else if(hasRemainingTargets() && arm[1]->have ==true){
                 dir = find_nearest_target(arm[1]); 
             }
             assert(dir>= 0 && dir <= 3);
@@ -291,8 +298,8 @@ void solve(){
                         }
                         else if(arm[i]->have == true && target[x][y] == true && takoyaki_position[x][y] == false){
                             arm[i]->have = false;
-                            target[x][y] = false; // たこ焼きを置く
                             takoyaki_position[x][y] = 1;
+                            m--;
                             s += 'P';
                         }
                         else {
