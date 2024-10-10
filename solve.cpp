@@ -101,6 +101,56 @@ void rotate(Point* point, int direction) {
     }
 }
 
+//たこ焼きのより存在する方向を考える
+int find_nearest_takoyaki(Point* point){
+    int x = 0;
+    int y = 0;
+    int sum = 0;
+    for(int i=0;i<n;i++){
+        for(int j=0;j<n;j++){
+            if(takoyaki_position[i][j] == true &&  target[i][j] == false ){
+                x += i;
+                y += j;
+                sum++;
+            }
+        }
+    }
+    if (sum == 0)return 0;
+    x /= sum;
+    y /= sum;
+    int now_x = point->position.first;
+    int now_y = point->position.second;
+    int dif_x = now_x - x;//たこ焼きの位置の平均値との差異を取得
+    int dif_y = now_y - y;
+    if(abs(dif_x) > abs(dif_y)){
+        if(now_x < x) return 1;
+        else return 3;
+    }
+    else {
+        if(now_y < y) return 0;
+        else return 2;
+    }
+}
+
+// 最も近い目的地を探す
+int find_nearest_target(Point* point){
+    int now_x = point->position.first;
+    int now_y = point->position.second;
+    for(int i=1;i<n;i++){
+        for(int j = 0;j<4;j++){
+            int next_x = now_x + DX[j] * i;
+            int next_y = now_y + DY[j] * i;
+            if (next_x < 0 || next_x >= n || next_y < 0 || next_y >= n) {
+                continue;
+            }
+            if(target[next_x][next_y] == true && takoyaki_position[next_x][next_y] == false){
+                return j;
+            }
+        }
+    }
+    return 0;
+}
+
 void solve(){
     srand(time(0));
     int m,v;
@@ -197,8 +247,15 @@ void solve(){
             }
             string s;
 
+            int dir;// 縦横移動の方向
+            if(arm[1]->have ==false){
             // 移動操作の指定
-            int dir = rand() % 4;
+            dir = find_nearest_takoyaki(arm[0]);
+            }
+            else {
+                dir = find_nearest_target(arm[1]); 
+            }
+            assert(dir>= 0 && dir <= 3);
             int new_x = arm[0]->position.first + DX[dir];
             int new_y = arm[0]->position.second + DY[dir];
             if(new_x >= 0 && new_x < n && new_y >= 0 && new_y < n){
@@ -208,8 +265,6 @@ void solve(){
                 s += '.';
             }
 
-            // cout << arm[0]->position.first << ' ' << arm[0]->position.second ;
-            // cout << arm[1]->position.first << ' ' << arm[1]->position.second << endl;
             // 回転操作の指定
             for(int i = 1; i < v; i++){
                 if (arm[i]->children.empty()) {
