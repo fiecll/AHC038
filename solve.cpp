@@ -245,7 +245,7 @@ void solve(){
     auto restTakoyaki = [&]() -> bool {
         for(int i=0;i<n;i++){
             for(int j=0;j<n;j++){
-                if(takoyaki_position[i][j] == true){
+                if(takoyaki_position[i][j] == true && target[i][j]==false){
                     return true;
                 }
             }
