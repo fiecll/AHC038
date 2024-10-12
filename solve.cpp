@@ -259,11 +259,19 @@ void solve(){
     Point* root = new Point(0, make_pair(0,0));
     arm.push_back(root);
     // 0を親として、頂点idの長さのアームを設定
-    for(int i=1;i<v;i++){
-        cout << 0 << ' ' << i << endl;
-        Point* newpoint = new Point(i, arm[0], make_pair(arm[0]->position.first , arm[i-1]->position.second+1));
+    for(int i=1;i<v;i++){;
+        if(i %4 != 0){
+        cout << i-1 << ' ' << 1 << endl;
+        Point* newpoint = new Point(i, arm[i-1], make_pair(arm[0]->position.first , arm[i-1]->position.second+1));
+        arm.push_back(newpoint);
+        arm[i-1]->children.push_back(newpoint);  // 子供を登録
+        }
+        else {
+        cout << 0 << ' ' << 1 << endl;
+        Point* newpoint = new Point(i, arm[0], make_pair(arm[0]->position.first , arm[0]->position.second+1));
         arm.push_back(newpoint);
         arm[0]->children.push_back(newpoint);  // 子供を登録
+        }
     }
 
     //とりあえず根の初期位置は原点に設定
@@ -312,7 +320,7 @@ void solve(){
             // ほかの頂点にたこ焼きが残っているとき  
                 for(int i=2;i<v;i++){
                 //if(arm[i]->have == true){
-                    dir = find_nearest_target(arm[0]);
+                    dir = find_nearest_target(arm[i]);
                     break;
 
                 //}
@@ -346,7 +354,10 @@ void solve(){
             for(int i = 0; i < v; i++){
                 if(i == 0){
                     s += '.';
-                } else {
+                } else if (!arm[i]->children.empty()){
+                    s += '.';
+                } 
+                else {
                     int x = arm[i]->position.first;
                     int y = arm[i]->position.second;
                     if (x >= 0 && x < n && y >= 0 && y < n) {
