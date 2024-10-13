@@ -376,7 +376,10 @@ void solve(){
             int dir;// 縦横移動の方向
             if(arm[1]->have ==false && restTakoyaki()){
             // 移動操作の指定
-            dir = find_nearest_takoyaki(arm[0]);
+            dir = find_nearest_takoyaki(arm[1]);
+            }
+            else if (arm[2]->have == false && restTakoyaki()){
+                dir = find_nearest_takoyaki(arm[2]);
             }
             else {
 
